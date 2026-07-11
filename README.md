@@ -7,7 +7,7 @@ Next.js 14 app where registered managers log in and track their standings and pa
 ```bash
 npm install
 cp .env.example .env.local   # set NEXT_PUBLIC_API_BASE_URL
-npm run dev   # runs on :3001
+npm run dev   # runs on :3051
 ```
 
 ## Pages
