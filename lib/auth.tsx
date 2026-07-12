@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { fetchMe, login as apiLogin, type User } from './api'
+import { fetchMe, login as apiLogin, logout as apiLogout, type User } from './api'
 
 interface AuthContextValue {
   user: User | null
@@ -22,10 +22,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const stored = localStorage.getItem('loc_access_token')
     if (stored) {
       setToken(stored)
-      fetchMe(stored)
+      // fetchMe silently retries via the refresh token on a 401 before
+      // giving up, so a stale 30-min access token doesn't force a fresh
+      // login as long as the 30-day refresh token is still valid.
+      fetchMe()
         .then(setUser)
         .catch(() => {
           localStorage.removeItem('loc_access_token')
+          localStorage.removeItem('loc_refresh_token')
           setToken(null)
         })
         .finally(() => setLoading(false))
@@ -39,10 +43,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('loc_access_token', access_token)
     localStorage.setItem('loc_refresh_token', refresh_token)
     setToken(access_token)
-    setUser(await fetchMe(access_token))
+    setUser(await fetchMe())
   }
 
   const logout = () => {
+    apiLogout() // revoke server-side; fire-and-forget, local logout doesn't wait on it
     localStorage.removeItem('loc_access_token')
     localStorage.removeItem('loc_refresh_token')
     setToken(null)

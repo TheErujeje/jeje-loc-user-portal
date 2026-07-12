@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Trophy, Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 
+const LANDING_URL = process.env.NEXT_PUBLIC_LANDING_URL || 'http://localhost:3050'
+
 export default function LoginPage() {
   const { login } = useAuth()
   const router = useRouter()
@@ -67,7 +69,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-gray-500">
             Not registered yet? Head to the{' '}
-            <a href="http://localhost:3000/register" className="text-pitch-green hover:underline">
+            <a href={`${LANDING_URL}/register`} className="text-pitch-green hover:underline">
               registration page
             </a>
             .

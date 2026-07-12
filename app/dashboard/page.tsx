@@ -21,7 +21,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!token) return
     fetchCurrentSeason()
-      .then((season) => fetchStandings(token, season.id))
+      .then((season) => fetchStandings(season.id))
       .then((data) => {
         setStandings(data.results)
         setEventId(data.event_id)

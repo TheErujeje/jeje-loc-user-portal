@@ -37,6 +37,66 @@ async function handle<T>(res: Response): Promise<T> {
   return res.json()
 }
 
+function clearSessionAndRedirect() {
+  localStorage.removeItem('loc_access_token')
+  localStorage.removeItem('loc_refresh_token')
+  if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+    window.location.href = '/login'
+  }
+}
+
+let refreshInFlight: Promise<string | null> | null = null
+
+// Access tokens expire in 30 min. Rather than send the user back to /login on
+// every 401, try exchanging the (30-day) refresh token for a new pair first —
+// only fall back to a hard redirect if the refresh token is also gone/expired.
+// refreshInFlight collapses concurrent 401s into a single refresh call.
+async function refreshAccessToken(): Promise<string | null> {
+  if (refreshInFlight) return refreshInFlight
+
+  refreshInFlight = (async () => {
+    const refreshToken = localStorage.getItem('loc_refresh_token')
+    if (!refreshToken) return null
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      localStorage.setItem('loc_access_token', data.access_token)
+      localStorage.setItem('loc_refresh_token', data.refresh_token)
+      return data.access_token as string
+    } catch {
+      return null
+    }
+  })()
+
+  const result = await refreshInFlight
+  refreshInFlight = null
+  return result
+}
+
+async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const token = localStorage.getItem('loc_access_token')
+  const withAuth = (t: string | null): RequestInit => ({
+    ...init,
+    headers: { ...init.headers, ...(t ? { Authorization: `Bearer ${t}` } : {}) },
+  })
+
+  const res = await fetch(`${API_BASE_URL}${path}`, withAuth(token))
+  if (res.status !== 401) return res
+
+  const newToken = await refreshAccessToken()
+  if (!newToken) {
+    clearSessionAndRedirect()
+    return res
+  }
+  return fetch(`${API_BASE_URL}${path}`, withAuth(newToken))
+}
+
 export async function login(email: string, password: string) {
   const res = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
@@ -46,10 +106,18 @@ export async function login(email: string, password: string) {
   return handle<{ access_token: string; refresh_token: string }>(res)
 }
 
-export async function fetchMe(token: string) {
-  const res = await fetch(`${API_BASE_URL}/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+export async function logout() {
+  const refreshToken = localStorage.getItem('loc_refresh_token')
+  if (!refreshToken) return
+  await fetch(`${API_BASE_URL}/auth/logout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  }).catch(() => {})
+}
+
+export async function fetchMe() {
+  const res = await authedFetch('/auth/me')
   return handle<User>(res)
 }
 
@@ -58,9 +126,7 @@ export async function fetchCurrentSeason() {
   return handle<{ id: string; label: string; status: string }>(res)
 }
 
-export async function fetchStandings(token: string, seasonId: string) {
-  const res = await fetch(`${API_BASE_URL}/fpl/seasons/${seasonId}/standings`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+export async function fetchStandings(seasonId: string) {
+  const res = await authedFetch(`/fpl/seasons/${seasonId}/standings`)
   return handle<{ event_id: number | null; results: StandingRow[] }>(res)
 }
