@@ -1,12 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from 'lucide-react'
 import { verifyPayment } from '@/lib/api'
 
-export default function ChallengePaymentSuccessPage() {
+function CheckingState() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center text-center px-4 bg-white dark:bg-ink-900">
+      <Loader2 className="h-16 w-16 text-brand-purple animate-spin mb-6 dark:text-brand-lilac" />
+      <h1 className="text-2xl font-semibold text-ink-900 tracking-tight dark:text-ink-100">Confirming your payment…</h1>
+    </div>
+  )
+}
+
+function ChallengePaymentSuccessContent() {
   const params = useSearchParams()
   const reference = params.get('reference') || params.get('trxref')
   const [status, setStatus] = useState<'checking' | 'success' | 'failed'>('checking')
@@ -21,14 +30,10 @@ export default function ChallengePaymentSuccessPage() {
       .catch(() => setStatus('failed'))
   }, [reference])
 
+  if (status === 'checking') return <CheckingState />
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-center px-4 bg-white dark:bg-ink-900">
-      {status === 'checking' && (
-        <>
-          <Loader2 className="h-16 w-16 text-brand-purple animate-spin mb-6 dark:text-brand-lilac" />
-          <h1 className="text-2xl font-semibold text-ink-900 tracking-tight dark:text-ink-100">Confirming your payment…</h1>
-        </>
-      )}
       {status === 'success' && (
         <>
           <CheckCircle2 className="h-16 w-16 text-status-success mb-6" />
@@ -55,5 +60,13 @@ export default function ChallengePaymentSuccessPage() {
         </>
       )}
     </div>
+  )
+}
+
+export default function ChallengePaymentSuccessPage() {
+  return (
+    <Suspense fallback={<CheckingState />}>
+      <ChallengePaymentSuccessContent />
+    </Suspense>
   )
 }
