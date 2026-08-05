@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Trophy, Loader2, ArrowRight, LayoutDashboard, Swords, Wallet } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
@@ -44,7 +45,7 @@ export default function LoginPage() {
         <div className="relative flex items-center justify-between">
           <span className="flex items-center gap-2">
             <Trophy className="h-6 w-6 text-white" />
-            <span className="font-semibold text-white tracking-tight">Jeje&apos;s League</span>
+            <span className="font-semibold text-white tracking-tight">Jeje&apos;s League of Champions</span>
           </span>
           <span className="text-[12.5px] font-medium text-white/70">Welcome back.</span>
         </div>
@@ -82,7 +83,7 @@ export default function LoginPage() {
           <div className="auth-strip-mesh" aria-hidden="true" />
           <span className="relative flex items-center gap-2">
             <Trophy className="h-5 w-5 text-white" />
-            <span className="font-semibold text-white tracking-tight">Jeje&apos;s League</span>
+            <span className="font-semibold text-white tracking-tight">Jeje&apos;s League of Champions</span>
           </span>
           <span className="relative text-[11.5px] font-medium text-white/70">Welcome back.</span>
         </div>
@@ -111,7 +112,12 @@ export default function LoginPage() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-[12.5px] font-medium text-ink-700 dark:text-ink-300">Password</span>
+                <span className="mb-1.5 flex items-center justify-between text-[12.5px] font-medium text-ink-700 dark:text-ink-300">
+                  Password
+                  <Link href="/forgot-password" className="font-medium text-brand-purple hover:underline dark:text-brand-lilac">
+                    Forgot password?
+                  </Link>
+                </span>
                 <input
                   type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
                   className="h-11 w-full rounded-[10px] border border-hairline bg-ink-100 px-3.5 text-[13.5px] text-ink-900 transition-colors placeholder:text-ink-400 focus:bg-white focus:outline-none focus:border-brand-purple dark:border-ink-700 dark:bg-ink-800 dark:text-ink-100 dark:focus:bg-ink-800 dark:focus:border-brand-lilac"
@@ -139,7 +145,7 @@ export default function LoginPage() {
         </div>
 
         <footer className="px-6 py-4 text-center text-[11.5px] text-ink-400 dark:text-ink-600">
-          © {new Date().getFullYear()} Jeje&apos;s League of Champions
+          © {new Date().getFullYear()} Jeje&apos;s <span className="font-semibold">League of Champions</span>
         </footer>
       </main>
     </div>

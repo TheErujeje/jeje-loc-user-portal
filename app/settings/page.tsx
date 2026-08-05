@@ -1,7 +1,22 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Camera, CheckCircle2, Loader2, Monitor, Moon, Pencil, Sun, Trash2, Wallet, X } from 'lucide-react'
+import Link from 'next/link'
+import {
+  Camera,
+  CheckCircle2,
+  ListChecks,
+  Loader2,
+  Monitor,
+  Moon,
+  Pencil,
+  ShieldCheck,
+  Sun,
+  Trash2,
+  Trophy,
+  Wallet,
+  X,
+} from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useTheme, type Theme } from '@/lib/theme'
 import { UserLayout } from '@/components/UserLayout'
@@ -11,10 +26,12 @@ import {
   API_BASE_URL,
   deleteMyAvatar,
   fetchMyBankAccount,
+  fetchPrizePool,
   updateMyBankAccount,
   updateMyProfile,
   uploadMyAvatar,
   type BankAccount,
+  type PrizePoolBreakdown,
 } from '@/lib/api'
 import { NIGERIAN_BANKS } from '@/lib/banks'
 import { Select } from '@/components/ui/Select'
@@ -37,10 +54,15 @@ export default function SettingsPage() {
       {season && registered === false && <RegisterPrompt seasonLabel={season.label} />}
 
       {user && (
-        <div className="max-w-lg space-y-6">
-          <ProfileCard user={user} onUpdated={refreshUser} />
-          <AppearanceCard />
-          {registered === true && <BankAccountCard />}
+        <div className="max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <div className="space-y-6">
+            <ProfileCard user={user} onUpdated={refreshUser} />
+            {registered === true && <BankAccountCard />}
+          </div>
+          <div className="space-y-6">
+            <AppearanceCard />
+            <LeagueRulesCard seasonId={season?.id ?? null} />
+          </div>
         </div>
       )}
     </UserLayout>
@@ -232,7 +254,7 @@ function AppearanceCard() {
   return (
     <section className="bg-white border border-hairline rounded-card shadow-sm p-6 dark:bg-ink-800 dark:border-ink-700">
       <h2 className="text-lg font-semibold text-ink-900 mb-1 dark:text-ink-100">Appearance</h2>
-      <p className="text-ink-500 text-sm mb-4 dark:text-ink-400">Choose how Jeje&apos;s League looks on this device.</p>
+      <p className="text-ink-500 text-sm mb-4 dark:text-ink-400">Choose how Jeje&apos;s <span className="font-semibold">League of Champions</span> looks on this device.</p>
 
       <div className="grid grid-cols-3 gap-2">
         {APPEARANCE_OPTIONS.map((opt) => {
@@ -255,6 +277,88 @@ function AppearanceCard() {
           )
         })}
       </div>
+    </section>
+  )
+}
+
+function formatNaira(kobo: number) {
+  return `₦${(kobo / 100).toLocaleString()}`
+}
+
+function LeagueRulesCard({ seasonId }: { seasonId: string | null }) {
+  const [pool, setPool] = useState<PrizePoolBreakdown | null>(null)
+
+  useEffect(() => {
+    if (!seasonId) return
+    fetchPrizePool(seasonId)
+      .then(setPool)
+      .catch(() => setPool(null))
+  }, [seasonId])
+
+  return (
+    <section className="bg-white border border-hairline rounded-card shadow-sm p-6 dark:bg-ink-800 dark:border-ink-700">
+      <div className="flex items-center gap-2 mb-1">
+        <ListChecks className="h-4 w-4 text-brand-purple dark:text-brand-lilac" />
+        <h2 className="text-lg font-semibold text-ink-900 dark:text-ink-100">League rules</h2>
+      </div>
+      <p className="text-ink-500 text-sm mb-6 dark:text-ink-400">How the league runs, end to end.</p>
+
+      <dl className="space-y-5 text-sm">
+        <div>
+          <dt className="label-eyebrow mb-1">Season format</dt>
+          <dd className="text-ink-700 dark:text-ink-300">
+            A private Fantasy Premier League classic mini-league, ranked by total points across the season
+            {pool ? ` — ${formatNaira(pool.entry_fee_kobo)} entry fee per manager.` : '.'} Optional head-to-head
+            challenges run alongside the classic table every gameweek.
+          </dd>
+        </div>
+        <div>
+          <dt className="label-eyebrow mb-1">Standings source</dt>
+          <dd className="text-ink-700 dark:text-ink-300">
+            Pulled directly from the official FPL classic-league API — synced automatically after every gameweek, and
+            refreshed live while a gameweek is in progress. Nothing is entered or adjusted manually.
+          </dd>
+        </div>
+        <div>
+          <dt className="label-eyebrow mb-1 flex items-center gap-1.5">
+            <Trophy className="h-3.5 w-3.5" /> Prize structure
+          </dt>
+          <dd className="text-ink-700 dark:text-ink-300">
+            {pool ? (
+              <>
+                {pool.weekly_prize_enabled && (
+                  <>
+                    {formatNaira(pool.weekly_prize_amount_kobo)} to the gameweek winner, every gameweek, plus{' '}
+                  </>
+                )}
+                a season-end split of the prize pool across the top 15 finishers.{' '}
+              </>
+            ) : (
+              'A share of the prize pool goes to the gameweek winner and the top season finishers. '
+            )}
+            <Link href="/payouts" className="text-brand-purple dark:text-brand-lilac hover:underline">
+              See the current prize pool
+            </Link>
+            .
+          </dd>
+        </div>
+        <div>
+          <dt className="label-eyebrow mb-1">Payout timing</dt>
+          <dd className="text-ink-700 dark:text-ink-300">
+            Once a gameweek is finished and FPL&apos;s scores are fully locked in, payouts are calculated automatically.
+            An admin reviews and approves each one, which fires the bank transfer immediately — no separate payment
+            run to wait for.
+          </dd>
+        </div>
+        <div>
+          <dt className="label-eyebrow mb-1 flex items-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5" /> Support
+          </dt>
+          <dd className="text-ink-700 dark:text-ink-300">
+            Questions about a payout, a challenge, or your registration? Reach out to your league admin directly.
+          </dd>
+        </div>
+      </dl>
     </section>
   )
 }

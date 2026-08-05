@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth'
 import { UserLayout } from '@/components/UserLayout'
 import { RegisterPrompt } from '@/components/RegisterPrompt'
 import { useRegistrationStatus } from '@/lib/useRegistrationStatus'
-import { fetchNewEntries, fetchStandings, type NewEntryRow, type StandingRow } from '@/lib/api'
+import { fetchLastFinishedStandings, fetchNewEntries, fetchStandings, type NewEntryRow, type StandingRow } from '@/lib/api'
 
 export default function DashboardPage() {
   const { user, token } = useAuth()
@@ -19,6 +19,10 @@ export default function DashboardPage() {
   const [newEntries, setNewEntries] = useState<NewEntryRow[]>([])
   const [newEntriesLoading, setNewEntriesLoading] = useState(false)
   const [newEntriesError, setNewEntriesError] = useState<string | null>(null)
+  // The last *finished* gameweek's winner — kept separate from `standings`
+  // (which can reflect a live, still-in-progress gameweek) so this stays
+  // pinned to the previous concluded week until the current one finishes too.
+  const [managerOfTheWeek, setManagerOfTheWeek] = useState<StandingRow | null>(null)
 
   useEffect(() => {
     // Only ever fetched once we know this user is actually registered for
@@ -34,6 +38,10 @@ export default function DashboardPage() {
       })
       .catch((err) => setStandingsError(err instanceof Error ? err.message : 'Could not load standings'))
       .finally(() => setStandingsLoading(false))
+
+    fetchLastFinishedStandings(season.id)
+      .then((data) => setManagerOfTheWeek(data.results.find((s) => s.gw_rank === 1) || null))
+      .catch(() => setManagerOfTheWeek(null))
 
     setNewEntriesLoading(true)
     fetchNewEntries(season.id)
@@ -60,10 +68,15 @@ export default function DashboardPage() {
       {registered === true && (
         <>
           {myRow && (
-            <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <StatCard label="This Gameweek" value={`${myRow.gw_points} pts`} sub={eventId ? `GW${eventId}` : ''} />
               <StatCard label="Total Points" value={String(myRow.total_points)} />
-              <StatCard label="Overall Rank" value={myRow.overall_rank ? `#${myRow.overall_rank}` : '—'} />
+              <StatCard label="League Rank" value={myRow.overall_rank ? `#${myRow.overall_rank}` : '—'} />
+              <StatCard
+                label="Manager of the Week"
+                value={managerOfTheWeek?.full_name || managerOfTheWeek?.fpl_team_name || '—'}
+                sub={managerOfTheWeek?.fpl_team_name && managerOfTheWeek?.full_name ? managerOfTheWeek.fpl_team_name : undefined}
+              />
             </section>
           )}
 

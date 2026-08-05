@@ -31,7 +31,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             <Trophy className="h-5 w-5 text-brand-purple dark:text-brand-lilac" />
             <span className="font-semibold text-ink-900 tracking-tight dark:text-ink-100">
-              Jeje&apos;s <span className="text-brand-purple dark:text-brand-lilac">League</span>
+              Jeje&apos;s <span className="text-brand-purple dark:text-brand-lilac">League of Champions</span>
             </span>
           </div>
           <button onClick={logout} aria-label="Log out" className="text-ink-500 hover:text-status-danger dark:text-ink-400">

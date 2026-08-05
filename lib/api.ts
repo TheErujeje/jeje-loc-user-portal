@@ -161,6 +161,24 @@ export async function logout() {
   }).catch(() => {})
 }
 
+export async function forgotPassword(email: string) {
+  const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  return handle<{ message: string }>(res)
+}
+
+export async function resetPassword(token: string, newPassword: string) {
+  const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  })
+  return handle<{ status: string }>(res)
+}
+
 export async function fetchMe() {
   const res = await authedFetch('/auth/me')
   return handle<User>(res)
@@ -173,6 +191,14 @@ export async function fetchCurrentSeason() {
 
 export async function fetchStandings(seasonId: string) {
   const res = await authedFetch(`/fpl/seasons/${seasonId}/standings`)
+  return handle<{ event_id: number | null; results: StandingRow[] }>(res)
+}
+
+// Pinned to the last *finished* gameweek — unlike fetchStandings, this never
+// resolves to a live/in-progress gameweek, so "Manager of the Week" doesn't
+// shift around while a gameweek is still being played.
+export async function fetchLastFinishedStandings(seasonId: string) {
+  const res = await authedFetch(`/fpl/seasons/${seasonId}/standings?finished_only=true`)
   return handle<{ event_id: number | null; results: StandingRow[] }>(res)
 }
 
@@ -195,6 +221,33 @@ export async function fetchMyRegistrationStatus(seasonId: string) {
 export async function fetchMyPayouts() {
   const res = await authedFetch('/payouts/mine')
   return handle<MyPayout[]>(res)
+}
+
+export interface PrizePoolSlot {
+  label: string
+  rank_range: string
+  percent: number
+  amount_kobo: number
+  per_rank_amount_kobo: number
+}
+
+export interface PrizePoolBreakdown {
+  season_id: string
+  pool_kobo: number
+  paid_entries: number
+  entry_fee_kobo: number
+  minimum_players: number
+  minimum_players_met: boolean
+  weekly_prize_enabled: boolean
+  weekly_prize_amount_kobo: number
+  season_prizes: PrizePoolSlot[]
+  other_prizes: { id: string; label: string; scope: string; amount_kobo: number | null }[]
+  allocated_kobo: number
+}
+
+export async function fetchPrizePool(seasonId: string) {
+  const res = await authedFetch(`/payouts/prize-pool?season_id=${seasonId}`)
+  return handle<PrizePoolBreakdown>(res)
 }
 
 export async function fetchMyBankAccount() {
@@ -240,6 +293,18 @@ export async function verifyPayment(reference: string) {
 export async function fetchOpenChallenges(seasonId: string) {
   const res = await authedFetch(`/challenges/open?season_id=${seasonId}`)
   return handle<Challenge[]>(res)
+}
+
+export interface WeeklyLimit {
+  event_id: number | null
+  used: number
+  limit: number
+  remaining: number
+}
+
+export async function fetchWeeklyLimit(seasonId: string) {
+  const res = await authedFetch(`/challenges/weekly-limit?season_id=${seasonId}`)
+  return handle<WeeklyLimit>(res)
 }
 
 export async function fetchMyChallenges(seasonId: string) {

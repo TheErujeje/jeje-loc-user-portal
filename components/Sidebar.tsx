@@ -21,7 +21,7 @@ export function Sidebar() {
       <div className="flex items-center gap-2 px-6 py-6">
         <Trophy className="h-6 w-6 text-brand-purple dark:text-brand-lilac" />
         <span className="font-semibold text-ink-900 tracking-tight dark:text-ink-100">
-          Jeje&apos;s <span className="text-brand-purple dark:text-brand-lilac">League</span>
+          Jeje&apos;s <span className="text-brand-purple dark:text-brand-lilac">League of Champions</span>
         </span>
       </div>
 

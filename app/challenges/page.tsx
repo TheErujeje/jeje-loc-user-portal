@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { Loader2, AlertCircle, Info } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { UserLayout } from '@/components/UserLayout'
 import { RegisterPrompt } from '@/components/RegisterPrompt'
@@ -12,12 +13,15 @@ import {
   createChallenge,
   fetchMyChallenges,
   fetchOpenChallenges,
+  fetchWeeklyLimit,
   type Challenge,
   type ChallengeType,
+  type WeeklyLimit,
 } from '@/lib/api'
 import { Select } from '@/components/ui/Select'
 
-const CHALLENGE_MAX_STAKE_NAIRA = 5000
+const CHALLENGE_MIN_STAKE_NAIRA = 1000
+const CHALLENGE_MAX_STAKE_NAIRA = 50000
 
 const TYPE_LABELS: Record<ChallengeType, string> = {
   most_points: 'Most Points',
@@ -37,6 +41,7 @@ export default function ChallengesPage() {
   const [tab, setTab] = useState<'open' | 'mine'>('open')
   const [openChallenges, setOpenChallenges] = useState<Challenge[]>([])
   const [myChallenges, setMyChallenges] = useState<Challenge[]>([])
+  const [weeklyLimit, setWeeklyLimit] = useState<WeeklyLimit | null>(null)
   const [listLoading, setListLoading] = useState(false)
   const [listError, setListError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -55,6 +60,10 @@ export default function ChallengesPage() {
       })
       .catch((err) => setListError(err instanceof Error ? err.message : 'Could not load challenges'))
       .finally(() => setListLoading(false))
+
+    fetchWeeklyLimit(sid)
+      .then(setWeeklyLimit)
+      .catch(() => setWeeklyLimit(null))
   }
 
   useEffect(() => {
@@ -74,6 +83,7 @@ export default function ChallengesPage() {
     } catch (err) {
       setPostError(err instanceof Error ? err.message : 'Could not create challenge')
       setPosting(false)
+      if (season) fetchWeeklyLimit(season.id).then(setWeeklyLimit).catch(() => {})
     }
   }
 
@@ -113,7 +123,38 @@ export default function ChallengesPage() {
       {registered === true && (
         <>
       <section className="bg-white border border-hairline rounded-card shadow-sm p-6 dark:bg-ink-800 dark:border-ink-700">
-        <h2 className="text-lg font-semibold text-ink-900 mb-4 dark:text-ink-100">Post a challenge</h2>
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
+          <h2 className="text-lg font-semibold text-ink-900 dark:text-ink-100">Post a challenge</h2>
+          {weeklyLimit && (
+            <span
+              className={`text-xs font-medium px-3 py-1 rounded-full ${
+                weeklyLimit.remaining === 0
+                  ? 'bg-status-danger/10 text-status-danger'
+                  : 'bg-ink-100 text-ink-500 dark:bg-white/10 dark:text-ink-400'
+              }`}
+            >
+              {weeklyLimit.remaining} of {weeklyLimit.limit} challenge slots left this gameweek
+            </span>
+          )}
+        </div>
+
+        <Link
+          href="/challenges/rules"
+          className="inline-flex items-center gap-1.5 text-xs text-brand-purple dark:text-brand-lilac hover:underline mb-4"
+        >
+          <Info className="h-3.5 w-3.5" />
+          Rules, stakes &amp; how payouts work
+        </Link>
+
+        {weeklyLimit && weeklyLimit.remaining === 0 ? (
+          <div className="flex items-start gap-3 bg-status-danger/10 text-status-danger text-sm rounded-lg p-4">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <p>
+              This gameweek&apos;s challenge limit ({weeklyLimit.limit}) has been reached — no more challenges can be posted
+              until next gameweek.
+            </p>
+          </div>
+        ) : (
         <form onSubmit={handlePost} className="flex flex-wrap items-end gap-4">
           <div>
             <label className="label-eyebrow block mb-1">Type</label>
@@ -131,11 +172,11 @@ export default function ChallengesPage() {
           </div>
           <div>
             <label className="label-eyebrow block mb-1">
-              Stake (max {formatNaira(CHALLENGE_MAX_STAKE_NAIRA * 100)})
+              Stake ({formatNaira(CHALLENGE_MIN_STAKE_NAIRA * 100)}–{formatNaira(CHALLENGE_MAX_STAKE_NAIRA * 100)})
             </label>
             <input
               type="number"
-              min={100}
+              min={CHALLENGE_MIN_STAKE_NAIRA}
               max={CHALLENGE_MAX_STAKE_NAIRA}
               step={100}
               value={stakeNaira}
@@ -151,6 +192,7 @@ export default function ChallengesPage() {
             {posting ? 'Redirecting…' : 'Post & Pay'}
           </button>
         </form>
+        )}
         {postError && <p className="text-status-danger text-sm mt-3">{postError}</p>}
       </section>
 
