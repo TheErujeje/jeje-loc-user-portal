@@ -79,8 +79,9 @@ export default function ChallengeRulesPage() {
           no manual judgment call on who scored what.
         </p>
         <p>
-          An admin only steps in for a genuine tie or a dispute. In that case, the admin either confirms a winner or
-          refunds both stakes in full — no partial payouts.
+          An exact tie is broken by a fair, fixed random draw — decided once and never re-rolled, same as gameweek
+          and season ties in the classic league. An admin only steps in to confirm the result (or, on a genuine
+          dispute, refund both stakes in full — no partial payouts).
         </p>
       </Section>
 
