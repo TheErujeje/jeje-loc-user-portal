@@ -343,6 +343,16 @@ function LeagueRulesCard({ seasonId }: { seasonId: string | null }) {
           </dd>
         </div>
         <div>
+          <dt className="label-eyebrow mb-1">Registration &amp; eligibility</dt>
+          <dd className="text-ink-700 dark:text-ink-300">
+            Registration stays open all season, right up to the final day — join whenever you like. To keep the
+            season-end prizes fair to managers who&apos;ve been in it from the start, though, you need to have
+            registered before Gameweek 10&apos;s deadline to be eligible for a season-end prize. Weekly gameweek
+            prizes and head-to-head challenges have no such cutoff — anyone can win those the moment they&apos;ve
+            joined.
+          </dd>
+        </div>
+        <div>
           <dt className="label-eyebrow mb-1">Tie-breaks</dt>
           <dd className="text-ink-700 dark:text-ink-300">
             If two or more managers are tied — on points for a single gameweek, or on total points for the season —
