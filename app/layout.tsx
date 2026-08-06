@@ -7,8 +7,19 @@ import { ThemeProvider, THEME_INIT_SCRIPT } from '@/lib/theme'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://app.jejefootball.com'),
   title: 'LOC | My Dashboard',
   description: "Jeje's League of Champions — manager dashboard",
+  openGraph: {
+    title: 'LOC | My Dashboard',
+    description: "Jeje's League of Champions — manager dashboard",
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'LOC | My Dashboard',
+    description: "Jeje's League of Champions — manager dashboard",
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
