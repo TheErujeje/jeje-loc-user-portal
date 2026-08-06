@@ -11,6 +11,7 @@ export interface User {
 }
 
 export interface StandingRow {
+  league_entry_id: string
   user_id: string | null
   fpl_team_name: string | null
   full_name: string | null
@@ -189,8 +190,9 @@ export async function fetchCurrentSeason() {
   return handle<{ id: string; label: string; status: string }>(res)
 }
 
-export async function fetchStandings(seasonId: string) {
-  const res = await authedFetch(`/fpl/seasons/${seasonId}/standings`)
+export async function fetchStandings(seasonId: string, eventId?: number) {
+  const query = eventId ? `?event_id=${eventId}` : ''
+  const res = await authedFetch(`/fpl/seasons/${seasonId}/standings${query}`)
   return handle<{ event_id: number | null; results: StandingRow[] }>(res)
 }
 
@@ -200,6 +202,19 @@ export async function fetchStandings(seasonId: string) {
 export async function fetchLastFinishedStandings(seasonId: string) {
   const res = await authedFetch(`/fpl/seasons/${seasonId}/standings?finished_only=true`)
   return handle<{ event_id: number | null; results: StandingRow[] }>(res)
+}
+
+export interface StandingRowDetail {
+  bonus_points: number
+  bench_points: number
+  transfers_made: number
+  transfer_cost: number
+  team_value: number
+}
+
+export async function fetchStandingRowDetail(seasonId: string, leagueEntryId: string, eventId: number) {
+  const res = await authedFetch(`/fpl/seasons/${seasonId}/standings/${leagueEntryId}/detail?event_id=${eventId}`)
+  return handle<StandingRowDetail>(res)
 }
 
 export async function fetchNewEntries(seasonId: string) {

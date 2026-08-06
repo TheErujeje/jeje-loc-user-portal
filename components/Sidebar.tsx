@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Trophy, LayoutDashboard, Swords, Wallet, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, Swords, Wallet, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
+import { Logo } from './Logo'
 
 const links = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -19,7 +20,7 @@ export function Sidebar() {
   return (
     <aside className="hidden w-64 flex-shrink-0 border-r border-hairline bg-white min-h-screen lg:flex lg:flex-col dark:border-ink-700 dark:bg-ink-900">
       <div className="flex items-center gap-2 px-6 py-6">
-        <Trophy className="h-6 w-6 text-brand-purple dark:text-brand-lilac" />
+        <Logo className="h-12 w-12 text-brand-purple dark:text-brand-lilac" />
         <span className="font-semibold text-ink-900 tracking-tight dark:text-ink-100">
           Jeje&apos;s <span className="text-brand-purple dark:text-brand-lilac">League of Champions</span>
         </span>

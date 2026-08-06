@@ -3,8 +3,9 @@
 import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { CheckCircle2, Loader2, Trophy } from 'lucide-react'
+import { CheckCircle2, Loader2 } from 'lucide-react'
 import { resetPassword } from '@/lib/api'
+import { Logo } from '@/components/Logo'
 
 function ResetPasswordForm() {
   const params = useSearchParams()
@@ -102,7 +103,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center px-5 py-8 bg-white dark:bg-ink-900">
       <div className="w-full max-w-[440px]">
         <div className="flex items-center gap-2 mb-6">
-          <Trophy className="h-6 w-6 text-brand-purple dark:text-brand-lilac" />
+          <Logo className="h-12 w-12 text-brand-purple dark:text-brand-lilac" />
           <span className="font-semibold text-ink-900 tracking-tight dark:text-ink-100">
             Jeje&apos;s <span className="text-brand-purple dark:text-brand-lilac">League of Champions</span>
           </span>

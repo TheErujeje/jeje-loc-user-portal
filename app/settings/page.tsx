@@ -343,6 +343,14 @@ function LeagueRulesCard({ seasonId }: { seasonId: string | null }) {
           </dd>
         </div>
         <div>
+          <dt className="label-eyebrow mb-1">Tie-breaks</dt>
+          <dd className="text-ink-700 dark:text-ink-300">
+            If two managers tie on points for a single gameweek, whoever has more total points for the season so far
+            takes the higher spot for that week. For the season-long standings, ties are broken exactly as the
+            official FPL classic league does it — we mirror their table as-is.
+          </dd>
+        </div>
+        <div>
           <dt className="label-eyebrow mb-1">Payout timing</dt>
           <dd className="text-ink-700 dark:text-ink-300">
             Once a gameweek is finished and FPL&apos;s scores are fully locked in, payouts are calculated automatically.
@@ -359,6 +367,11 @@ function LeagueRulesCard({ seasonId }: { seasonId: string | null }) {
           </dd>
         </div>
       </dl>
+
+      <p className="text-xs text-ink-400 dark:text-ink-500 mt-6 pt-4 border-t border-hairline dark:border-ink-700">
+        By registering and participating in Jeje&apos;s League of Champions, you agree to the rules above and our
+        terms and conditions.
+      </p>
     </section>
   )
 }

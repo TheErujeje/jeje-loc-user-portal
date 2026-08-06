@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Trophy, Loader2, ArrowRight, LayoutDashboard, Swords, Wallet } from 'lucide-react'
+import { Loader2, ArrowRight, LayoutDashboard, Swords, Wallet } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
+import { Logo } from '@/components/Logo'
 
 const LANDING_URL = process.env.NEXT_PUBLIC_LANDING_URL || 'http://localhost:3050'
 
@@ -44,7 +45,7 @@ export default function LoginPage() {
 
         <div className="relative flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <Trophy className="h-6 w-6 text-white" />
+            <Logo className="h-12 w-12 text-white" />
             <span className="font-semibold text-white tracking-tight">Jeje&apos;s League of Champions</span>
           </span>
           <span className="text-[12.5px] font-medium text-white/70">Welcome back.</span>
@@ -82,7 +83,7 @@ export default function LoginPage() {
         <div className="auth-strip relative flex items-center justify-between overflow-hidden px-5 py-4 lg:hidden">
           <div className="auth-strip-mesh" aria-hidden="true" />
           <span className="relative flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-white" />
+            <Logo className="h-10 w-10 text-white" />
             <span className="font-semibold text-white tracking-tight">Jeje&apos;s League of Champions</span>
           </span>
           <span className="relative text-[11.5px] font-medium text-white/70">Welcome back.</span>

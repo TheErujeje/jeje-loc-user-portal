@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, MailCheck, Trophy } from 'lucide-react'
+import { ArrowLeft, Loader2, MailCheck } from 'lucide-react'
 import { forgotPassword } from '@/lib/api'
+import { Logo } from '@/components/Logo'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -29,7 +30,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center px-5 py-8 bg-white dark:bg-ink-900">
       <div className="w-full max-w-[440px]">
         <div className="flex items-center gap-2 mb-6">
-          <Trophy className="h-6 w-6 text-brand-purple dark:text-brand-lilac" />
+          <Logo className="h-12 w-12 text-brand-purple dark:text-brand-lilac" />
           <span className="font-semibold text-ink-900 tracking-tight dark:text-ink-100">
             Jeje&apos;s <span className="text-brand-purple dark:text-brand-lilac">League of Champions</span>
           </span>
