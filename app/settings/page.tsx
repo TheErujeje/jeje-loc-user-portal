@@ -345,9 +345,8 @@ function LeagueRulesCard({ seasonId }: { seasonId: string | null }) {
         <div>
           <dt className="label-eyebrow mb-1">Tie-breaks</dt>
           <dd className="text-ink-700 dark:text-ink-300">
-            If two managers tie on points for a single gameweek, whoever has more total points for the season so far
-            takes the higher spot for that week. For the season-long standings, ties are broken exactly as the
-            official FPL classic league does it — we mirror their table as-is.
+            If two or more managers are tied — on points for a single gameweek, or on total points for the season —
+            the winner is decided by a fair random draw, fixed once the tie is set and never re-rolled.
           </dd>
         </div>
         <div>
