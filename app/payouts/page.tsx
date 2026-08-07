@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, Trophy, Users, Calendar } from 'lucide-react'
+import { Loader2, Trophy, Calendar } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { UserLayout } from '@/components/UserLayout'
 import { fetchMyPayouts, fetchCurrentSeason, fetchPrizePool, type MyPayout, type PrizePoolBreakdown } from '@/lib/api'
@@ -57,20 +57,6 @@ export default function PayoutsPage() {
 
       {pool && (
         <div className="bg-white border border-hairline rounded-card shadow-sm p-6 space-y-6 dark:bg-ink-800 dark:border-ink-700">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <p className="label-eyebrow text-brand-purple dark:text-brand-lilac mb-1">Current prize pool</p>
-              <p className="text-3xl font-semibold text-ink-900 tracking-tight tnum dark:text-ink-100">
-                {formatNaira(pool.pool_kobo)}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-ink-500 dark:text-ink-400">
-              <Users className="h-4 w-4" />
-              {pool.paid_entries} paid entries
-              {pool.minimum_players > 0 && <span> / {pool.minimum_players} min</span>}
-            </div>
-          </div>
-
           {pool.minimum_players > 0 && (
             <div>
               <div className="h-2 w-full bg-ink-100 dark:bg-white/10 rounded-full overflow-hidden">
