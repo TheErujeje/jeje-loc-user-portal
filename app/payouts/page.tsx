@@ -46,7 +46,10 @@ export default function PayoutsPage() {
       .finally(() => setPoolLoading(false))
   }, [token])
 
-  if (!user) return null
+  // Keep UserLayout mounted (rather than `return null`) so its own
+  // loading/redirect-to-login effect actually gets a chance to fire —
+  // e.g. right after clicking logout.
+  if (!user) return <UserLayout>{null}</UserLayout>
 
   return (
     <UserLayout>
