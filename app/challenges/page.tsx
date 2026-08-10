@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import useSWR from 'swr'
 import Link from 'next/link'
 import { Loader2, AlertCircle, Info } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
@@ -14,9 +15,7 @@ import {
   fetchMyChallenges,
   fetchOpenChallenges,
   fetchWeeklyLimit,
-  type Challenge,
   type ChallengeType,
-  type WeeklyLimit,
 } from '@/lib/api'
 import { Select } from '@/components/ui/Select'
 
@@ -39,11 +38,6 @@ export default function ChallengesPage() {
   const { season, registered, myLeagueEntryId } = useRegistrationStatus(token)
 
   const [tab, setTab] = useState<'open' | 'mine'>('open')
-  const [openChallenges, setOpenChallenges] = useState<Challenge[]>([])
-  const [myChallenges, setMyChallenges] = useState<Challenge[]>([])
-  const [weeklyLimit, setWeeklyLimit] = useState<WeeklyLimit | null>(null)
-  const [listLoading, setListLoading] = useState(false)
-  const [listError, setListError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
 
   const [challengeType, setChallengeType] = useState<ChallengeType>('most_points')
@@ -51,25 +45,36 @@ export default function ChallengesPage() {
   const [postError, setPostError] = useState<string | null>(null)
   const [posting, setPosting] = useState(false)
 
-  const load = (sid: string) => {
-    setListLoading(true)
-    Promise.all([fetchOpenChallenges(sid), fetchMyChallenges(sid)])
-      .then(([open, mine]) => {
-        setOpenChallenges(open)
-        setMyChallenges(mine)
-      })
-      .catch((err) => setListError(err instanceof Error ? err.message : 'Could not load challenges'))
-      .finally(() => setListLoading(false))
+  const seasonId = season?.id
+  const canLoad = Boolean(seasonId) && registered === true
 
-    fetchWeeklyLimit(sid)
-      .then(setWeeklyLimit)
-      .catch(() => setWeeklyLimit(null))
-  }
+  // Another manager accepting/posting/cancelling a challenge changes these
+  // lists without any action on this page, so they're worth polling rather
+  // than only refetching on navigation.
+  const {
+    data: openChallenges = [],
+    isLoading: openLoading,
+    error: openErr,
+    mutate: mutateOpen,
+  } = useSWR(canLoad ? ['open-challenges', seasonId] : null, () => fetchOpenChallenges(seasonId as string), {
+    refreshInterval: 30000,
+  })
+  const {
+    data: myChallenges = [],
+    isLoading: mineLoading,
+    error: mineErr,
+    mutate: mutateMine,
+  } = useSWR(canLoad ? ['my-challenges', seasonId] : null, () => fetchMyChallenges(seasonId as string), {
+    refreshInterval: 30000,
+  })
+  const { data: weeklyLimit, mutate: mutateWeeklyLimit } = useSWR(canLoad ? ['weekly-limit', seasonId] : null, () =>
+    fetchWeeklyLimit(seasonId as string)
+  )
 
-  useEffect(() => {
-    if (!season || registered !== true) return
-    load(season.id)
-  }, [season, registered])
+  const listLoading = openLoading || mineLoading
+  const listErrObj = openErr || mineErr
+  const [actionError, setActionError] = useState<string | null>(null)
+  const listError = actionError ?? (listErrObj ? (listErrObj instanceof Error ? listErrObj.message : 'Could not load challenges') : null)
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,7 +88,7 @@ export default function ChallengesPage() {
     } catch (err) {
       setPostError(err instanceof Error ? err.message : 'Could not create challenge')
       setPosting(false)
-      if (season) fetchWeeklyLimit(season.id).then(setWeeklyLimit).catch(() => {})
+      mutateWeeklyLimit()
     }
   }
 
@@ -93,7 +98,7 @@ export default function ChallengesPage() {
       const res = await acceptChallenge(challengeId)
       window.location.href = res.payment_authorization_url
     } catch (err) {
-      setListError(err instanceof Error ? err.message : 'Could not accept challenge')
+      setActionError(err instanceof Error ? err.message : 'Could not accept challenge')
       setBusyId(null)
     }
   }
@@ -102,9 +107,10 @@ export default function ChallengesPage() {
     setBusyId(challengeId)
     try {
       await cancelChallenge(challengeId)
-      if (season) load(season.id)
+      mutateOpen()
+      mutateMine()
     } catch (err) {
-      setListError(err instanceof Error ? err.message : 'Could not cancel challenge')
+      setActionError(err instanceof Error ? err.message : 'Could not cancel challenge')
     } finally {
       setBusyId(null)
     }

@@ -1,6 +1,7 @@
 'use client'
 
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useState } from 'react'
+import useSWR from 'swr'
 import { ChevronDown, ChevronUp, Loader2, Medal } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { UserLayout } from '@/components/UserLayout'
@@ -12,7 +13,6 @@ import {
   fetchNewEntries,
   fetchStandingRowDetail,
   fetchStandings,
-  type NewEntryRow,
   type StandingRow,
   type StandingRowDetail,
 } from '@/lib/api'
@@ -28,64 +28,70 @@ export default function DashboardPage() {
   const { season, registered, fplTeamName } = useRegistrationStatus(token)
   const [tab, setTab] = useState<'standings' | 'new_entries'>('standings')
 
-  // Live (possibly in-progress) view — this is what loads by default.
-  const [liveStandings, setLiveStandings] = useState<StandingRow[]>([])
-  const [liveEventId, setLiveEventId] = useState<number | null>(null)
-  // The last *finished* gameweek's winner — kept separate from live
-  // standings (which can reflect a still-in-progress gameweek) so it stays
-  // pinned to the previous concluded week until the current one finishes.
-  const [lastFinishedMotw, setLastFinishedMotw] = useState<StandingRow | null>(null)
-
   // Historical "as of gameweek N" view, selected via the gameweek filter.
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null)
-  const [historicalStandings, setHistoricalStandings] = useState<StandingRow[]>([])
-
-  const [standingsLoading, setStandingsLoading] = useState(false)
-  const [standingsError, setStandingsError] = useState<string | null>(null)
-  const [newEntries, setNewEntries] = useState<NewEntryRow[]>([])
-  const [newEntriesLoading, setNewEntriesLoading] = useState(false)
-  const [newEntriesError, setNewEntriesError] = useState<string | null>(null)
 
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
   const [rowDetails, setRowDetails] = useState<Record<string, StandingRowDetail>>({})
   const [rowDetailLoadingId, setRowDetailLoadingId] = useState<string | null>(null)
   const [rowDetailError, setRowDetailError] = useState<string | null>(null)
 
-  useEffect(() => {
-    // Only ever fetched once we know this user is actually registered for
-    // the season — an unregistered user shouldn't see (or even request)
-    // this season's standings/new entries.
-    if (!season || registered !== true) return
+  // Only ever fetched once we know this user is actually registered for the
+  // season — an unregistered user shouldn't see (or even request) this
+  // season's standings/new entries.
+  const canLoad = Boolean(season) && registered === true
+  const seasonId = season?.id
 
-    setStandingsLoading(true)
-    fetchStandings(season.id)
-      .then((data) => {
-        setLiveStandings(data.results)
-        setLiveEventId(data.event_id)
-      })
-      .catch((err) => setStandingsError(err instanceof Error ? err.message : 'Could not load standings'))
-      .finally(() => setStandingsLoading(false))
+  // Live (possibly in-progress) view — this is what loads by default. Polled
+  // since these points move in real time during a gameweek, independent of
+  // anything the viewer clicks.
+  const {
+    data: liveData,
+    isLoading: liveLoading,
+    error: liveErr,
+  } = useSWR(canLoad ? ['live-standings', seasonId] : null, () => fetchStandings(seasonId as string), {
+    refreshInterval: 30000,
+  })
+  const liveStandings = liveData?.results ?? []
+  const liveEventId = liveData?.event_id ?? null
 
-    fetchLastFinishedStandings(season.id)
-      .then((data) => setLastFinishedMotw(data.results.find((s) => s.gw_rank === 1) || null))
-      .catch(() => setLastFinishedMotw(null))
+  // The last *finished* gameweek's winner — kept separate from live
+  // standings (which can reflect a still-in-progress gameweek) so it stays
+  // pinned to the previous concluded week until the current one finishes.
+  // Only changes once a gameweek finishes, so no polling needed here.
+  const { data: lastFinishedMotw = null } = useSWR(canLoad ? ['last-finished-standings', seasonId] : null, () =>
+    fetchLastFinishedStandings(seasonId as string).then((data) => data.results.find((s) => s.gw_rank === 1) || null)
+  )
 
-    setNewEntriesLoading(true)
-    fetchNewEntries(season.id)
-      .then(setNewEntries)
-      .catch((err) => setNewEntriesError(err instanceof Error ? err.message : 'Could not load new entries'))
-      .finally(() => setNewEntriesLoading(false))
-  }, [season, registered])
+  const {
+    data: historicalData,
+    isLoading: historicalLoading,
+    error: historicalErr,
+  } = useSWR(
+    canLoad && selectedEventId != null ? ['historical-standings', seasonId, selectedEventId] : null,
+    () => fetchStandings(seasonId as string, selectedEventId as number)
+  )
+  const historicalStandings = historicalData?.results ?? []
 
-  useEffect(() => {
-    if (!season || registered !== true || selectedEventId == null) return
-    setStandingsLoading(true)
-    setStandingsError(null)
-    fetchStandings(season.id, selectedEventId)
-      .then((data) => setHistoricalStandings(data.results))
-      .catch((err) => setStandingsError(err instanceof Error ? err.message : 'Could not load standings'))
-      .finally(() => setStandingsLoading(false))
-  }, [season, registered, selectedEventId])
+  const viewingLiveForLoading = selectedEventId == null
+  const standingsLoading = viewingLiveForLoading ? liveLoading : historicalLoading
+  const standingsErrObj = viewingLiveForLoading ? liveErr : historicalErr
+  const standingsError = standingsErrObj
+    ? standingsErrObj instanceof Error
+      ? standingsErrObj.message
+      : 'Could not load standings'
+    : null
+
+  const {
+    data: newEntries = [],
+    isLoading: newEntriesLoading,
+    error: newEntriesErrObj,
+  } = useSWR(canLoad ? ['new-entries', seasonId] : null, () => fetchNewEntries(seasonId as string))
+  const newEntriesError = newEntriesErrObj
+    ? newEntriesErrObj instanceof Error
+      ? newEntriesErrObj.message
+      : 'Could not load new entries'
+    : null
 
   // Keep UserLayout mounted (rather than `return null`) so its own
   // loading/redirect-to-login effect actually gets a chance to fire —

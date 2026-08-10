@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import useSWR from 'swr'
 import Link from 'next/link'
 import {
   Camera,
@@ -30,8 +31,6 @@ import {
   updateMyBankAccount,
   updateMyProfile,
   uploadMyAvatar,
-  type BankAccount,
-  type PrizePoolBreakdown,
 } from '@/lib/api'
 import { NIGERIAN_BANKS } from '@/lib/banks'
 import { Select } from '@/components/ui/Select'
@@ -286,14 +285,7 @@ function formatNaira(kobo: number) {
 }
 
 function LeagueRulesCard({ seasonId }: { seasonId: string | null }) {
-  const [pool, setPool] = useState<PrizePoolBreakdown | null>(null)
-
-  useEffect(() => {
-    if (!seasonId) return
-    fetchPrizePool(seasonId)
-      .then(setPool)
-      .catch(() => setPool(null))
-  }, [seasonId])
+  const { data: pool } = useSWR(seasonId ? ['prize-pool', seasonId] : null, () => fetchPrizePool(seasonId as string))
 
   return (
     <section className="bg-white border border-hairline rounded-card shadow-sm p-6 dark:bg-ink-800 dark:border-ink-700">
@@ -386,9 +378,8 @@ function LeagueRulesCard({ seasonId }: { seasonId: string | null }) {
 }
 
 function BankAccountCard() {
-  const [bankAccount, setBankAccount] = useState<BankAccount | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const { data: bankAccount, isLoading: loading, error: loadErrorObj, mutate } = useSWR('my-bank-account', fetchMyBankAccount)
+  const loadError = loadErrorObj ? (loadErrorObj instanceof Error ? loadErrorObj.message : 'Could not load bank details') : null
   const [isEditing, setIsEditing] = useState(false)
 
   const [accountNumber, setAccountNumber] = useState('')
@@ -397,22 +388,22 @@ function BankAccountCard() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
+  // Only runs once per mount (guarded by the ref, not by `bankAccount`
+  // itself) so a background SWR revalidation later doesn't stomp whatever
+  // the user is actively typing into the edit form.
+  const initializedRef = useRef(false)
   useEffect(() => {
-    fetchMyBankAccount()
-      .then((account) => {
-        setBankAccount(account)
-        if (account) {
-          setAccountNumber(account.account_number)
-          setBankCode(account.bank_code)
-        } else {
-          // Nothing on file yet — go straight to the form instead of an
-          // empty display view with nothing to show.
-          setIsEditing(true)
-        }
-      })
-      .catch((err) => setLoadError(err instanceof Error ? err.message : 'Could not load bank details'))
-      .finally(() => setLoading(false))
-  }, [])
+    if (bankAccount === undefined || initializedRef.current) return
+    initializedRef.current = true
+    if (bankAccount) {
+      setAccountNumber(bankAccount.account_number)
+      setBankCode(bankAccount.bank_code)
+    } else {
+      // Nothing on file yet — go straight to the form instead of an
+      // empty display view with nothing to show.
+      setIsEditing(true)
+    }
+  }, [bankAccount])
 
   const startEdit = () => {
     setSaveError(null)
@@ -440,7 +431,7 @@ function BankAccountCard() {
     setSaved(false)
     try {
       const updated = await updateMyBankAccount(accountNumber, bankCode)
-      setBankAccount(updated)
+      mutate(updated, { revalidate: false })
       setSaved(true)
       setIsEditing(false)
     } catch (err) {

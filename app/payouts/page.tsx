@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import useSWR from 'swr'
 import { Loader2, Trophy, Calendar } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { UserLayout } from '@/components/UserLayout'
-import { fetchMyPayouts, fetchCurrentSeason, fetchPrizePool, type MyPayout, type PrizePoolBreakdown } from '@/lib/api'
+import { fetchMyPayouts, fetchCurrentSeason, fetchPrizePool } from '@/lib/api'
 
 const STATUS_COLORS: Record<string, string> = {
   pending_approval: 'text-status-warning',
@@ -21,30 +21,21 @@ function formatNaira(kobo: number) {
 
 export default function PayoutsPage() {
   const { user, token } = useAuth()
-  const [payouts, setPayouts] = useState<MyPayout[]>([])
-  const [pool, setPool] = useState<PrizePoolBreakdown | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [poolLoading, setPoolLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!token) return
-    setLoading(true)
-    fetchMyPayouts()
-      .then(setPayouts)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Could not load payouts'))
-      .finally(() => setLoading(false))
-  }, [token])
+  // Payout status can flip (admin approval, Paystack webhook) while this
+  // page just sits open, not only on navigation — poll so that's visible
+  // without a manual refresh.
+  const {
+    data: payouts = [],
+    isLoading: loading,
+    error: payoutsErr,
+  } = useSWR(token ? 'my-payouts' : null, fetchMyPayouts, { refreshInterval: 30000 })
+  const error = payoutsErr ? (payoutsErr instanceof Error ? payoutsErr.message : 'Could not load payouts') : null
 
-  useEffect(() => {
-    if (!token) return
-    setPoolLoading(true)
-    fetchCurrentSeason()
-      .then((season) => fetchPrizePool(season.id))
-      .then(setPool)
-      .catch(() => setPool(null))
-      .finally(() => setPoolLoading(false))
-  }, [token])
+  const { data: pool, isLoading: poolLoading } = useSWR(token ? 'my-prize-pool' : null, async () => {
+    const season = await fetchCurrentSeason()
+    return fetchPrizePool(season.id)
+  })
 
   // Keep UserLayout mounted (rather than `return null`) so its own
   // loading/redirect-to-login effect actually gets a chance to fire —
